@@ -5,10 +5,31 @@ rootFolder = (getDir #userScripts) + "/GenTools"
 preferencesIni = rootFolder + "/GenToolsPreferences.ini" 
 locationlistini = rootFolder + "/compartmentlist.ini"
 locationlistarray = getIniSetting locationlistini
-rootFolder = (getDir #userScripts) + "/GenTools"
-preferencesIni = rootFolder + "/GenToolsPreferences.ini" 
 exportlabel = "Export_To" 
 unityRot = eulerToQuat(eulerAngles 90 0 180)
+
+-- Starting Precautions
+fn StartingPrecautions =
+if getIniSetting preferencesIni "Export" "SceneNameAs" == "" do
+(
+	setIniSetting preferencesIni "Export" "SceneNameAs" "1"
+) 
+if getIniSetting preferencesIni "Export" "LayerNameAs" == "" do
+(
+	setIniSetting preferencesIni "Export" "LayerNameAs" "1"
+) 
+if getIniSetting preferencesIni "Export" "CustomAs" == "" do
+(
+	setIniSetting preferencesIni "Export" "CustomAs" "1"
+) 
+if getIniSetting preferencesIni "Export" "ExportHidden" == "" do
+(
+	 setIniSetting preferencesIni "Export" "ExportHidden" "false"
+)
+if (getIniSetting preferencesIni "Export" "FlipForUnity" ) == "" do
+(
+	setIniSetting preferencesIni "Export" "FlipForUnity" "false"
+)
 
 	
 fn ReloadLists =
@@ -29,27 +50,12 @@ fn ReloadLists =
 
 fn CheckOptionStates =
 (
-	if getIniSetting preferencesIni "Export" "SceneNameAs" != "" then
-	(
-		locationsRollout.sceneradio.state = (getIniSetting preferencesIni "Export" "SceneNameAs" as integer)
-	) else ( locationsRollout.sceneradio.state = 1 )
-	if getIniSetting preferencesIni "Export" "LayerNameAs" != "" then
-	(
-		locationsRollout.layerradio.state = (getIniSetting preferencesIni "Export" "LayerNameAs" as integer)
-	) else ( locationsRollout.layerradio.state = 1 )
-	if getIniSetting preferencesIni "Export" "CustomAs" != "" then
-	(
-		locationsRollout.customradio.state = (getIniSetting preferencesIni "Export" "CustomAs" as integer)
-	) else ( locationsRollout.customradio.state = 1 )
+	locationsRollout.sceneradio.state = (getIniSetting preferencesIni "Export" "SceneNameAs" as integer)
+	locationsRollout.layerradio.state = (getIniSetting preferencesIni "Export" "LayerNameAs" as integer)
+	locationsRollout.customradio.state = (getIniSetting preferencesIni "Export" "CustomAs" as integer)
 	locationsRollout.customtext.text = (getIniSetting preferencesIni "Export" "CustomString" as string)
-	if getIniSetting preferencesIni "Export" "ExportHidden" != "" then
-	(
-		locationsRollout.hiddencheck.state = (getIniSetting preferencesIni "Export" "ExportHidden" as booleanClass)
-	) else ( locationsRollout.hiddencheck.state = true )
-	if (getIniSetting preferencesIni "Export" "FlipForUnity" ) != "" then
-	(
-		locationsRollout.flipcheck.state = (getIniSetting preferencesIni "Export" "FlipForUnity" as booleanClass)
-	) else ( locationsRollout.flipcheck.state = false )
+	locationsRollout.hiddencheck.state = (getIniSetting preferencesIni "Export" "ExportHidden" as booleanClass)
+	locationsRollout.flipcheck.state = (getIniSetting preferencesIni "Export" "FlipForUnity" as booleanClass)
 )
 
 fn Flip =
@@ -296,7 +302,7 @@ fn ExportLayersForUnity =
 		childDummy.rotation += unityRot as quat
 		for o in curObj.children do
 		(
-			if classOf o == Dummy do
+			 if classOf o == Dummy do
 			ResetXform o
 		)
 		select parentDummy
@@ -488,5 +494,5 @@ rollout DiXporter "DiXporter" width:160
 	
 
 )
-
+StartingPrecautions()
 createDialog DiXporter
