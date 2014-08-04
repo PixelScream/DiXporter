@@ -124,8 +124,21 @@ rollout locationsRollout "Locations" width:888 height:448
 	checkbox flipcheck "Filp for Unity" pos:[680,425] width:104 height:16 toolTip:"When exporting in mesh mode adds the correct rotation for Unity, and make Y Up"
 	on locationsRollout open do
 	(
-		CheckOptionStates()
-		ReloadLists()
+		sceneradio.state = (getIniSetting preferencesIni "Export" "SceneNameAs" as integer)
+		layerradio.state = (getIniSetting preferencesIni "Export" "LayerNameAs" as integer)
+		customradio.state = (getIniSetting preferencesIni "Export" "CustomAs" as integer)
+		customtext.text = (getIniSetting preferencesIni "Export" "CustomString" as string)
+		hiddencheck.state = (getIniSetting preferencesIni "Export" "ExportHidden" as booleanClass)
+		flipcheck.state = (getIniSetting preferencesIni "Export" "FlipForUnity" as booleanClass)
+			
+		locationlistarray = getIniSetting locationlistini
+		pathArray = for i in 1 to locationlistarray.count collect
+		(
+			getIniSetting locationlistini locationlistarray[i] exportlabel
+		)
+
+		locationbox.items = locationlistarray
+		pathbox.items = pathArray
 	)
 	on locationbox selected sel do
 	(
