@@ -6,31 +6,45 @@ preferencesIni = rootFolder + "/GenToolsPreferences.ini"
 locationlistini = rootFolder + "/compartmentlist.ini"
 locationlistarray = getIniSetting locationlistini
 exportlabel = "Export_To" 
-unityRot = eulerToQuat(eulerAngles 90 0 180)
+unityRot = eulerToQuat(eulerAngles 90 0 180) -- it used to be 90 0 180 
 
 -- Starting Precautions
 fn StartingPrecautions =
-if getIniSetting preferencesIni "Export" "SceneNameAs" == "" do
 (
-	setIniSetting preferencesIni "Export" "SceneNameAs" "1"
-) 
-if getIniSetting preferencesIni "Export" "LayerNameAs" == "" do
-(
-	setIniSetting preferencesIni "Export" "LayerNameAs" "1"
-) 
-if getIniSetting preferencesIni "Export" "CustomAs" == "" do
-(
-	setIniSetting preferencesIni "Export" "CustomAs" "1"
-) 
-if getIniSetting preferencesIni "Export" "ExportHidden" == "" do
-(
-	 setIniSetting preferencesIni "Export" "ExportHidden" "false"
+	if doesFileExist rootFolder == false do
+	(
+		print "making director at - " + rootFolder
+		makeDir rootFolder
+	)
+	if doesFileExist preferencesIni != true then
+	(
+		messageBox "Can't find Ini, Creating it now"
+	)
+	else
+	(
+		print "Found ini"
+	)
+	if getIniSetting preferencesIni "Export" "SceneNameAs" == "" do
+	(
+		setIniSetting preferencesIni "Export" "SceneNameAs" "1"
+	) 
+	if getIniSetting preferencesIni "Export" "LayerNameAs" == "" do
+	(
+		setIniSetting preferencesIni "Export" "LayerNameAs" "1"
+	) 
+	if getIniSetting preferencesIni "Export" "CustomAs" == "" do
+	(
+		setIniSetting preferencesIni "Export" "CustomAs" "1"
+	) 
+	if getIniSetting preferencesIni "Export" "ExportHidden" == "" do
+	(
+		 setIniSetting preferencesIni "Export" "ExportHidden" "false"
+	)
+	if (getIniSetting preferencesIni "Export" "FlipForUnity" ) == "" do
+	(
+		setIniSetting preferencesIni "Export" "FlipForUnity" "false"
+	)
 )
-if (getIniSetting preferencesIni "Export" "FlipForUnity" ) == "" do
-(
-	setIniSetting preferencesIni "Export" "FlipForUnity" "false"
-)
-
 	
 fn ReloadLists =
 (
@@ -242,7 +256,7 @@ fn ExportWholeFile =
 	
 fn ExportLayers =
 (
-	local exportlocation = getIniSetting locationlistini DiXporter.locationbox.selection exportlabel
+	local exportlocation = getIniSetting locationlistini (DiXporter.locationbox.selection as string) exportlabel
 	for i = 1 to DiXporter.layerArray.count do 
 	(
 		layer = DiXporter.allLayerNames[DiXporter.layerArray[i]]
@@ -284,48 +298,15 @@ fn ExportLayers =
 	)
 )
 
-fn ExportLayersForUnity =
-(
-	max hold
-	local exportlocation = getIniSetting locationlistini DiXporter.selectedLocation exportlabel
-	for i = 1 to DiXporter.layerArray.count do 
-	(
-		layer = DiXporter.allLayerNames[DiXporter.layerArray[i]]
-		exportTo = "P_" + layer
-		sceneNameState = (getIniSetting preferencesIni "Export" "SceneNameAs" as integer)
-		if sceneNameState == 1 do
-		(
-			exportTo = exportlocation + "\\" + exportTo
-		)
-		if sceneNameState == 2 do
-		(
-			exportTo = exportlocation + "\\" + trimright maxFileName ".max" + "_" + exportTo
-		)
-		if sceneNameState == 3 do
-		(
-			exportTo = exportlocation + "\\" + exportTo + "_" + trimright maxFileName ".max" 
-		)
-		
-		curObj = execute("$'"+ layer + "'")
-		curObj.position = [0,0,0]
-		parentDummy = dummy pos:curObj.pos name:("P_" + curObj.name) size:1
-		childDummy = dummy pos:curObj.pos name:("ro_" + curObj.name) size:0.5
-		curObj.parent = childDummy
-		childDummy.parent = parentDummy
-		childDummy.rotation += unityRot as quat
-		for o in curObj.children do
-		(
-			 if classOf o == Dummy do
-			ResetXform o
-		)
-		select parentDummy
-		selectMore curObj
-		selectMore curObj.children
 
-		exportFile exportTo  selectedOnly:true #noPrompt
-	)
-	max fetch
+/*
+fn alignMyPivot sourceNode targetNode =
+(
+sourceNode.objectOffsetRot = targetNode.rotation
+rotate sourceNode targetNode.rotation
+sourceNode.pivot = targetNode.position
 )
+*/
 
 fn ExportSingleNodes =
 (
@@ -400,7 +381,7 @@ fn ExpLocation =
 			setIniSetting meshIni o.name "y" (o.pos.y as string)
 			setIniSetting meshIni o.name "z" (o.pos.z as string)
 			
-			setIniSetting meshIni o.name "Rotation" (o.rotation as string)
+			setIniSetting meshIni o.name "Rotation" (o.rotation as string) -- as eulerAngles
 		)
 	)
 )
@@ -411,13 +392,63 @@ rollout DiXporter "DiXporter" width:160
 	local layerArray = #()
 	local selectedLocation 
 	local expMethod = 2
-	
+	--exp functions
+	fn ResetToMesh toReset =
+	(
+		ConvertToMesh toReset
+		ResetXform toReset
+		ConvertToMesh toReset
+	)
+	fn ExportLayersForUnity =
+	(
+		-- hold for backup
+		max hold
+		-- get dir for export
+		local exportlocation = getIniSetting locationlistini selectedLocation exportlabel
+		-- export each layer selected
+		for i = 1 to layerArray.count do 
+		(
+			layer = allLayerNames[layerArray[i]]
+			exportTo = "P_" + layer
+			exportTo = exportlocation + "\\" + exportTo
+			
+			curObj = execute("$'"+ layer + "'")
+			if curObj == undefined do
+			(
+				messagebox "No root object named " 
+				return 0
+			)
+			if curObj.children != undefined do ( for obj in curObj.children do obj.parent = undefined )
+			ResetToMesh (curObj)
+			(LayerManager.getLayerFromName(layer)).nodes &theNodes
+			theNodes = for o in theNodes where o.isHidden == false collect o
+			for obj in theNodes where obj != curObj do (obj.parent = curObj)
+			curObj.position = [0,0,0]
+			curObj.rotation += unityRot as quat
+			for obj in theNodes where obj != curObj do 
+			(
+				obj.parent = undefined
+				ResetToMesh(obj)
+			)
+			ResetToMesh(curObj)
+			parentDummy = dummy pos:curObj.pos name:("P_" + curObj.name) 
+			--curObj.parent = parentDummy
+			for obj in theNodes do obj.parent = parentDummy
+			select parentDummy
+			selectMore parentDummy.children
+
+			exportFile exportTo  selectedOnly:true #noPrompt
+		)
+		max fetch
+	)
+	--Rollout Start
 	dropdownList methoddrop "Export Type" pos:[8,8] width:144 height:40 items:#("File", "Layer",  "Mesh", "Layer For Unity") selection:expMethod
 	listBox locationbox "Locations" pos:[8,50] width:144 height:8  selection:0 items:locationlistarray
 	multiListBox layerlistbox "Layers" pos:[8,184] width:144 height:8 selection:0
 	button exportbtn "Export" pos:[16,320] width:128 height:21 
 	button explocationbtn "Export Position" pos:[16,350] width:128 height:21 
 	button prefsbtn "Preferences" pos:[130,2] width:22 height:20 images:#("Pref_Icons.bmp", "undefined", 2, 1, 2, 1, 1)
+	button reloadbtn "Reload" pos:[104,0] width:22 height:20 images:#("Reload_Icon.bmp", "undefined", 2, 1, 2, 1, 1)
 	on DiXporter open do
 	(
 		layCount = layerManager.count - 1
@@ -425,7 +456,7 @@ rollout DiXporter "DiXporter" width:160
 		allLayerNames = sort(append allLayerNames ("0"))
 		layerlistbox.items = allLayerNames
 		methoddrop.selection = getIniSetting preferencesIni "Export" "ExpMethod" as integer
-		clearListener()
+		--clearListener()
 	)
 	on prefsbtn pressed do
 	(
@@ -505,7 +536,13 @@ rollout DiXporter "DiXporter" width:160
 		setIniSetting preferencesIni "Export" "ExpMethod" (sel as string)
 	)
 	
-
+	on reloadbtn pressed do
+	(
+		layCount = layerManager.count - 1
+		allLayerNames = for i = 1 to layCount collect (layermanager.getlayer i).name
+		allLayerNames = sort(append allLayerNames ("0"))
+		layerlistbox.items = allLayerNames
+	)
 )
 StartingPrecautions()
 createDialog DiXporter
