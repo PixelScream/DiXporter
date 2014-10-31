@@ -45,7 +45,10 @@ fn StartingPrecautions =
 		setIniSetting preferencesIni "Export" "FlipForUnity" "false"
 	)
 )
-	
+rollout progressRollout "Objects light map uv's" 
+(
+	progressBar progressb "ProgressBar" pos:[8,8] width:144 height:24
+)	
 fn ReloadLists =
 (
 	locationlistarray = getIniSetting locationlistini
@@ -251,6 +254,56 @@ rollout DiXporter "DiXporter" width:160
 			)
 		)
 	)
+	fn LightmapPack  =
+	(
+		createDialog progressRollout
+		--progressCB.setTitle "My Effect Pass1"
+		--progressStart "lightmap packing"
+		lmName = "lightmap pack"
+		max modify mode
+		
+		with redraw off
+		for i = 1 to layerArray.count do 
+		(
+			count = 1
+			layer = allLayerNames[layerArray[i]]
+			(LayerManager.getLayerFromName(layer)).nodes &theNodes
+			select theNodes
+			--for obj in theNodes where isGroupHEad obj do explodeGroup obj
+			--theNodes = selection
+			for obj in theNodes do
+			(
+				select obj
+				if obj.modifiers[1] == undefined or obj.modifiers[1].name != lmName and superClassOf obj == GeometryClass do
+				(
+					ConvertToPoly obj
+					--format "lightmapping %" obj.name
+					channelInfo.addChannel obj
+					channelInfo.CopyChannel obj 3 1
+					channelInfo.PasteChannel obj 3 2
+					channelInfo.NameChannel obj 3 2 "-lm-"
+					nUV = Unwrap_UVW name:lmName
+					addModifier obj nUV
+					obj.modifiers[lmName].unwrap.setMapChannel 2
+					subobjectLevel = 3
+					max select all
+					obj.modifiers[lmName].pack 0 0.02 true false false
+					subobjectLevel = 0
+					max select none
+					prog = (count as float /theNodes.count as float) * 100.0
+					print prog
+					count += 1
+					progressRollout.progressb.value = prog
+				)
+
+				--progressUpdate(count/theNodes.count)
+				
+				--if progressCB.progress count theNodes.count then exit
+			)
+		)
+		--progressEnd() 
+		destroyDialog progressRollout
+	)
 	fn ExportSingleNodes =
 	(
 		local exportlocation = getIniSetting locationlistini selectedLocation exportlabel
@@ -445,10 +498,7 @@ fn ExportWholeFile =
 	(
 		layer = allLayerNames[DiXporter.layerArray[i]]
 		(LayerManager.getLayerFromName(layer)).nodes &theNodes
-		if (getIniSetting preferencesIni "Export" "ExportHidden" as booleanClass) == false then
-		(
-			theNodes = for o in theNodes where o.isHidden == false collect o
-		)
+		theNodes = for o in theNodes where o.isHidden == false collect o
 		selectmore theNodes
 	)	
 	exportFile exportTo  selectedOnly:true #noPrompt
@@ -459,7 +509,7 @@ fn ExportWholeFile =
 	multiListBox layerlistbox "Layers" pos:[8,184] width:144 height:8 selection:0
 	button exportbtn "Export" pos:[16,320] width:128 height:21 
 	button explocationbtn "Export Position" pos:[16,350] width:128 height:21 
-	button prefsbtn "Preferences" pos:[130,2] width:22 height:20 images:#("Pref_Icons.bmp", "undefined", 2, 1, 2, 1, 1)
+	button prefsbtn "Preferences" pos:[130,2] width:22 height:20 images:#("Pref_Icon.bmp", "undefined", 2, 1, 2, 1, 1)
 	button reloadbtn "Reload" pos:[104,2] width:22 height:20 images:#("Reload_Icon.bmp", "undefined", 2, 1, 2, 1, 1)
 	on DiXporter open do
 	(
@@ -508,7 +558,10 @@ fn ExportWholeFile =
 				if methoddrop.selection == 1 do
 				(
 					--messagebox errorstring
+					max hold
+					LightmapPack()
 					ExportWholeFile()
+					max fetch
 				)
 				
 				if methoddrop.selection == 2 do
