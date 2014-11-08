@@ -558,10 +558,10 @@ fn ExportWholeFile =
 				if methoddrop.selection == 1 do
 				(
 					--messagebox errorstring
-					max hold
-					LightmapPack()
+					--max hold
+					--LightmapPack()
 					ExportWholeFile()
-					max fetch
+					--max fetch
 				)
 				
 				if methoddrop.selection == 2 do
